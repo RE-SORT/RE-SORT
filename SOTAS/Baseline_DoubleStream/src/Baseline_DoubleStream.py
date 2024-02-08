@@ -5,10 +5,10 @@ from re_sortctr.pytorch.models import BaseModel
 from re_sortctr.pytorch.layers import FeatureEmbedding, MLP_Block
 
 
-class Baseline(BaseModel):
+class Baseline_DoubleStream(BaseModel):  
     def __init__(self, 
                  feature_map, 
-                 model_id="Baseline",
+                 model_id="Baseline_DoubleStream", 
                  gpu=-1,
                  learning_rate=1e-3,
                  embedding_dim=10,
@@ -28,28 +28,43 @@ class Baseline(BaseModel):
                  embedding_regularizer=None,
                  net_regularizer=None,
                  **kwargs):
-        super(Baseline, self).__init__(feature_map, 
-                                       model_id=model_id, 
-                                       gpu=gpu, 
-                                       embedding_regularizer=embedding_regularizer, 
-                                       net_regularizer=net_regularizer,
-                                       **kwargs)
-        self.embedding_layer = FeatureEmbedding(feature_map, embedding_dim)
+        super(Baseline_DoubleStream, self).__init__(feature_map, 
+                                                     model_id=model_id, 
+                                                     gpu=gpu, 
+                                                     embedding_regularizer=embedding_regularizer, 
+                                                     net_regularizer=net_regularizer,
+                                                     **kwargs)
+        self.embedding_layer_stream1 = FeatureEmbedding(feature_map, embedding_dim)
+        self.embedding_layer_stream2 = FeatureEmbedding(feature_map, embedding_dim)  
         feature_dim = embedding_dim * feature_map.num_fields
-        self.mlp1 = MLP_Block(input_dim=feature_dim,
-                              output_dim=None, 
-                              hidden_units=mlp1_hidden_units,
-                              hidden_activations=mlp1_hidden_activations,
-                              output_activation=None,
-                              dropout_rates=mlp1_dropout,
-                              batch_norm=mlp1_batch_norm)
-        self.mlp2 = MLP_Block(input_dim=feature_dim,
-                              output_dim=None, 
-                              hidden_units=mlp2_hidden_units,
-                              hidden_activations=mlp2_hidden_activations,
-                              output_activation=None,
-                              dropout_rates=mlp2_dropout, 
-                              batch_norm=mlp2_batch_norm)
+        self.mlp1_stream1 = MLP_Block(input_dim=feature_dim,
+                                      output_dim=None, 
+                                      hidden_units=mlp1_hidden_units,
+                                      hidden_activations=mlp1_hidden_activations,
+                                      output_activation=None,
+                                      dropout_rates=mlp1_dropout,
+                                      batch_norm=mlp1_batch_norm)
+        self.mlp2_stream1 = MLP_Block(input_dim=mlp1_hidden_units[-1], 
+                                      output_dim=None, 
+                                      hidden_units=mlp2_hidden_units,
+                                      hidden_activations=mlp2_hidden_activations,
+                                      output_activation=None,
+                                      dropout_rates=mlp2_dropout, 
+                                      batch_norm=mlp2_batch_norm)
+        self.mlp1_stream2 = MLP_Block(input_dim=feature_dim,
+                                      output_dim=None, 
+                                      hidden_units=mlp1_hidden_units,
+                                      hidden_activations=mlp1_hidden_activations,
+                                      output_activation=None,
+                                      dropout_rates=mlp1_dropout,
+                                      batch_norm=mlp1_batch_norm)
+        self.mlp2_stream2 = MLP_Block(input_dim=mlp1_hidden_units[-1],  
+                                      output_dim=None, 
+                                      hidden_units=mlp2_hidden_units,
+                                      hidden_activations=mlp2_hidden_activations,
+                                      output_activation=None,
+                                      dropout_rates=mlp2_dropout, 
+                                      batch_norm=mlp2_batch_norm)
         self.use_fs = use_fs
         if self.use_fs:
             self.fs_module = FeatureSelection(feature_map, 
@@ -58,7 +73,7 @@ class Baseline(BaseModel):
                                               fs_hidden_units, 
                                               fs1_context,
                                               fs2_context)
-        self.fusion_module = InteractionAggregation(mlp1_hidden_units[-1], 
+        self.fusion_module = InteractionAggregation(mlp2_hidden_units[-1],  
                                                     mlp2_hidden_units[-1], 
                                                     output_dim=1, 
                                                     num_heads=num_heads)
@@ -71,17 +86,19 @@ class Baseline(BaseModel):
         Inputs: [X,y]
         """
         X = self.get_inputs(inputs)
-        flat_emb = self.embedding_layer(X).flatten(start_dim=1)
+        flat_emb_stream1 = self.embedding_layer_stream1(X).flatten(start_dim=1)
+        flat_emb_stream2 = self.embedding_layer_stream2(X).flatten(start_dim=1) 
         if self.use_fs:
-            feat1, feat2 = self.fs_module(X, flat_emb)
+            feat1_stream1, feat2_stream1 = self.fs_module(X, flat_emb_stream1)
+            feat1_stream2, feat2_stream2 = self.fs_module(X, flat_emb_stream2)
         else:
-            feat1, feat2 = flat_emb, flat_emb
-        y_pred = self.fusion_module(self.mlp1(feat1), self.mlp2(feat2))
+            feat1_stream1, feat2_stream1 = flat_emb_stream1, flat_emb_stream1
+            feat1_stream2, feat2_stream2 = flat_emb_stream2, flat_emb_stream2
+        y_pred = self.fusion_module(self.mlp2_stream1(self.mlp1_stream1(feat1_stream1)), 
+                                    self.mlp2_stream2(self.mlp1_stream2(feat2_stream2)))
         y_pred = self.output_activation(y_pred)
         return_dict = {"y_pred": y_pred}
         return return_dict
-
-
 class FeatureSelection(nn.Module):
     def __init__(self, feature_map, feature_dim, embedding_dim, fs_hidden_units=[], 
                  fs1_context=[], fs2_context=[]):
