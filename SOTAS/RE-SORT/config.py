@@ -2,18 +2,18 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch RE-SORT Training')
 
-parser.add_argument('--epochs', default=200, type=int, metavar='N',
+parser.add_argument('--epochs', default=200, type=int,
                     help='number of total epochs to run')
 
 
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
-                    metavar='LR', help='initial learning rate', dest='lr')
+                    help='initial learning rate', dest='lr')
 parser.add_argument('--cos', '--cosine_lr', default=1, type=int,
-                    metavar='COS', help='lr decay by decay', dest='cos')
-parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
+                     help='lr decay by decay', dest='cos')
+parser.add_argument('--momentum', default=0.9, type=float,
                     help='momentum')
 parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)',
+                     help='weight decay (default: 1e-4)',
                     dest='weight_decay')
 parser.add_argument('--seed', default=2023, type=int,
                     help='seed for initializing training. ')
@@ -31,10 +31,6 @@ parser.add_argument ('--lambdap', type = float, default = 80.0, help = 'weight d
 parser.add_argument ('--lambdapre', type = float, default = 1, help = 'weight for pre_weight1 ')
 
 parser.add_argument ('--epochb', type = int, default = 6, help = 'number of epochs to balance')
-parser.add_argument ('--epochp', type = int, default = 0, help = 'number of epochs to pretrain')
-
-# parser.add_argument ('--n_feature', type=int, default=128, help = 'number of pre-saved features')
-# parser.add_argument ('--feature_dim', type=int, default=512, help = 'the dim of each feature')
 
 parser.add_argument ('--lrwarmup_epo', type=int, default=0, help = 'the dim of each feature')
 parser.add_argument ('--lrwarmup_decay', type=int, default=0.1, help = 'the dim of each feature')
@@ -44,8 +40,6 @@ parser.add_argument ('--n_levels', type=int, default=1, help = 'number of global
 parser.add_argument ('--lambda_decay_rate', type=float, default=0.9, help = 'ratio of epoch for lambda to decay')
 parser.add_argument ('--lambda_decay_epoch', type=int, default=5, help = 'number of epoch for lambda to decay')
 parser.add_argument ('--min_lambda_times', type=float, default=0.001, help = 'number of global table levels')
-
-parser.add_argument ('--train_cnn_with_lossb', type=bool, default=False, help = 'whether train cnn with lossb')
 parser.add_argument ('--cnn_lossb_lambda', type=float, default=0, help = 'lambda for lossb')
 
 parser.add_argument ('--moments_lossb', type=float, default=1, help = 'number of moments')
@@ -60,7 +54,6 @@ parser.add_argument ('--third_lambda', type=float, default=0.05, help = 'weight 
 
 # for lr decay epochs
 parser.add_argument ('--epochs_decay', type=list, default=[24, 30], help = 'weight lambda for second order moment loss')
-parser.add_argument ('--sub_dataset', type=str, default="", help = '')
 parser.add_argument ('--gray_scale', type=float, default=0.1, help = 'weight lambda for second order moment loss')
 
 parser.add_argument('--sum', type=bool, default=True, help='sum or concat')
