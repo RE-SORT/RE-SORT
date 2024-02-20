@@ -6,7 +6,6 @@ This is the official  implementation of the paper 《RE-SORT: Removing Spurious 
 
 python run_expid.py --config {config_dir} --expid {experiment_id} --gpu {gpu_device_id}
 
-🔥 **Citation**
 
 🔥 **Citation**
 
