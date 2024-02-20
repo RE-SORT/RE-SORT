@@ -1,6 +1,6 @@
 import argparse
 
-parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
+parser = argparse.ArgumentParser(description='PyTorch RE-SORT Training')
 
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
