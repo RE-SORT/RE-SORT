@@ -150,10 +150,10 @@ def weight_learner(cfeatures, pre_features, pre_weight1, args, global_epoch=0, i
     softmax_weight = softmax(weight)
     return softmax_weight, pre_features, pre_weight1
 #self.weight1, self.pre_features, self.pre_weight1
-class BaseModel(nn.Module):
+class FCEModel(nn.Module):
     def __init__(self, 
                  feature_map, 
-                 model_id="BaseModel", 
+                 model_id="FCEModel", 
                  task="binary_classification", 
                  gpu=-1, 
                  monitor="AUC", 
@@ -165,7 +165,7 @@ class BaseModel(nn.Module):
                  net_regularizer=None, 
                  reduce_lr_on_plateau=True, 
                  **kwargs):
-        super(BaseModel, self).__init__()
+        super(FCEModel, self).__init__()
         self.device = get_device(gpu)
         self.gpu = gpu
         self._monitor = Monitor(kv=monitor)
