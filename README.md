@@ -1,7 +1,5 @@
 # RE-SORT
 
-This is the  implementation of the paper《RE-SORT: Removing Spurious Correlation in Multi-level Interaction for CTR Prediction》.
-
 This is an official implementation of ***RE-SORT*** for CTR prediction task, as described in our paper:
 
 Songli Wu, Liang Du, Jia-Qi Yang, Yuai Wang, De-Chuan Zhan, Shuang Zhao and Zixun Sun.
