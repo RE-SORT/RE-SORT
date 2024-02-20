@@ -1,39 +1,39 @@
-
-import torch.nn as nn
+import os
+import sys
+import math
 import numpy as np
-import torch
-import os, sys
-import logging
-from re_sortctr.metrics import evaluate_metrics
-from re_sortctr.pytorch.torch_utils import get_device, get_optimizer, get_loss, get_regularizer
-from re_sortctr.utils import Monitor
 from tqdm import tqdm
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-import math
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-import math
-import numpy as np
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from re_sortctr.metrics import evaluate_metrics
+from re_sortctr.pytorch.torch_utils import get_device, get_optimizer, get_loss, get_regularizer
+from re_sortctr.utils import Monitor
+
+
 def sd(x):
     return np.std(x, axis=0, ddof=1)
+
+
 def sd_gpu(x):
     return torch.std(x, dim=0)
+
+
 def normalize_gpu(x):
     x = F.normalize(x, p=1, dim=1)
     return x
+
+
 def normalize(x):
     mean = np.mean(x, axis=0)
     std = sd(x)
     std[std == 0] = 1
     x = (x - mean) / std
     return x
+
+
 def random_fourier_features_gpu(x, w=None, b=None, num_f=None, sum=True, sigma=None, seed=None):
     if num_f is None:
         num_f = 1
@@ -58,9 +58,13 @@ def random_fourier_features_gpu(x, w=None, b=None, num_f=None, sum=True, sigma=N
     else:
         Z = Z * torch.cat((torch.cos(mid).cuda(), torch.sin(mid).cuda()), dim=-1)
     return Z
+
+
 def lossc(inputs, target, weight):
     loss = nn.NLLLoss(reduce=False)
     return loss(inputs, target).view(1, -1).mm(weight).view(1)
+
+
 def cov(x, w=None):
     if w is None:
         n = x.shape[0]
@@ -73,6 +77,8 @@ def cov(x, w=None):
         e = torch.sum(w * x, dim=0).view(-1, 1)
         res = cov - torch.matmul(e, e.t())
     return res
+
+
 def lossb_expect(cfeaturec, weight, num_f, sum=True):
     cfeaturecs = random_fourier_features_gpu(cfeaturec, num_f=num_f, sum=sum).cuda()
     loss = Variable(torch.FloatTensor([0]).cuda())
@@ -83,10 +89,16 @@ def lossb_expect(cfeaturec, weight, num_f, sum=True):
         cov_matrix = cov1 * cov1
         loss += torch.sum(cov_matrix) - torch.trace(cov_matrix)
     return loss
+
+
 def lossq(cfeatures, cfs):
     return - cfeatures.pow(2).sum(1).mean(0).view(1) / cfs
+
+
 def lossn(cfeatures):
     return cfeatures.mean(0).pow(2).mean(0).view(1)
+
+
 def lr_setter(optimizer, epoch, args, bl=False):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     lr = args['lr']
@@ -102,29 +114,25 @@ def lr_setter(optimizer, epoch, args, bl=False):
                 lr *= 0.1
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+
 def weight_learner(cfeatures, pre_features, pre_weight1, args, global_epoch=0, iter=0):
     softmax = nn.Softmax(0)
     weight = Variable(torch.ones(cfeatures.size()[0], 1).cuda())
     weight.requires_grad = True
     cfeaturec = Variable(torch.FloatTensor(cfeatures.size()).cuda())
     cfeaturec.data.copy_(cfeatures.data)
-    # print("cfeaturec:",cfeaturec)
-    # print("pre_features:",pre_features)
     all_feature = torch.cat([cfeaturec, pre_features.detach()], dim=0)
     optimizerbl = torch.optim.SGD([weight], lr=args['lrbl'], momentum=args['momentum'])
     for epoch in range(args['epochb']):
         lr_setter(optimizerbl, epoch, args, bl=True)
-        # print("epoch=",epoch,args['epochb'])
-        # print("weight:",weight.size())
-        # print("weight:",weight)
-        # print("pre_weight1:", pre_weight1.size())
-        # print("pre_weight1:", pre_weight1)
         all_weight = torch.cat((weight, pre_weight1.detach()), dim=0)
         optimizerbl.zero_grad()
-        lossb = lossb_expect(all_feature, softmax(all_weight),args['num_f'], args['sum'])#args['epochb']-epoch, args['sum'])#args['num_f'], args['sum'])#args['num_f'], args['sum'])#epoch+3, args['sum'])#args['num_f'], args['sum'])
+        lossb = lossb_expect(all_feature, softmax(all_weight), args['num_f'], args[
+            'sum'])
         lossp = softmax(weight).pow(args['decay_pow']).sum()
         lambdap = args['lambdap'] * max((args['lambda_decay_rate'] ** (global_epoch // args['lambda_decay_epoch'])),
-                                     args['min_lambda_times'])
+                                        args['min_lambda_times'])
         lossg = lossb / lambdap + lossp
         if global_epoch == 0:
             lossg = lossg * args['first_step_cons']
@@ -135,35 +143,35 @@ def weight_learner(cfeatures, pre_features, pre_weight1, args, global_epoch=0, i
         pre_weight1 = (pre_weight1 * iter + weight) / (iter + 1)
         # print("first")
     elif cfeatures.size()[0] < pre_features.size()[0]:
-        pre_features[:cfeatures.size()[0]] = pre_features[:cfeatures.size()[0]].clone() * args['presave_ratio'] + cfeatures.clone() * (
-                    1 - args['presave_ratio'])
-        pre_weight1[:cfeatures.size()[0]] = pre_weight1[:cfeatures.size()[0]].clone() * args['presave_ratio'] + weight.clone() * (
-                    1 - args['presave_ratio'])
-        # print("second")
+        pre_features[:cfeatures.size()[0]] = pre_features[:cfeatures.size()[0]].clone() * args[
+            'presave_ratio'] + cfeatures.clone() * (
+                                                     1 - args['presave_ratio'])
+        pre_weight1[:cfeatures.size()[0]] = pre_weight1[:cfeatures.size()[0]].clone() * args[
+            'presave_ratio'] + weight.clone() * (
+                                                    1 - args['presave_ratio'])
     else:
-        # print("pre_weight1=",pre_weight1)
-        # print("weight",weight)
+
         pre_features = pre_features * args['presave_ratio'] + (cfeatures * (1 - args['presave_ratio'])).cuda()
         pre_weight1 = pre_weight1 * args['presave_ratio'] + weight * (1 - args['presave_ratio'])
-        # print("pre_weight1=",pre_weight1)
-        # print("third")
+
     softmax_weight = softmax(weight)
     return softmax_weight, pre_features, pre_weight1
-#self.weight1, self.pre_features, self.pre_weight1
+
+
 class FCEModel(nn.Module):
-    def __init__(self, 
-                 feature_map, 
-                 model_id="FCEModel", 
-                 task="binary_classification", 
-                 gpu=-1, 
-                 monitor="AUC", 
-                 save_best_only=True, 
-                 monitor_mode="max", 
-                 early_stop_patience=2, 
-                 eval_steps=None, 
-                 embedding_regularizer=None, 
-                 net_regularizer=None, 
-                 reduce_lr_on_plateau=True, 
+    def __init__(self,
+                 feature_map,
+                 model_id="FCEModel",
+                 task="binary_classification",
+                 gpu=-1,
+                 monitor="AUC",
+                 save_best_only=True,
+                 monitor_mode="max",
+                 early_stop_patience=2,
+                 eval_steps=None,
+                 embedding_regularizer=None,
+                 net_regularizer=None,
+                 reduce_lr_on_plateau=True,
                  **kwargs):
         super(FCEModel, self).__init__()
         self.device = get_device(gpu)
@@ -171,7 +179,7 @@ class FCEModel(nn.Module):
         self._monitor = Monitor(kv=monitor)
         self._monitor_mode = monitor_mode
         self._early_stop_patience = early_stop_patience
-        self._eval_steps = eval_steps # None default, that is evaluating every epoch
+        self._eval_steps = eval_steps  # None default, that is evaluating every epoch
         self._save_best_only = save_best_only
         self._embedding_regularizer = embedding_regularizer
         self._net_regularizer = net_regularizer
@@ -185,63 +193,37 @@ class FCEModel(nn.Module):
         self.validation_metrics = kwargs["metrics"]
         self.feat1 = None
         self.feat2 = None
-        self.flat_emb=None
-        self.weight1 =1
-        self.args= kwargs['args']
+        self.flat_emb = None
+        self.weight1 = 1
+        self.args = kwargs['args']
         self.epoch = kwargs['epochs']
-        self.count=0
+        self.count = 0
+
     def compile(self, optimizer, loss, lr):
         self.optimizer = get_optimizer(optimizer, self.parameters(), lr)
         self.loss_fn = get_loss(loss)
+
     def add_loss(self, inputs):
-        #print(inputs.size())
         return_dict = self.forward(inputs)
         y_true = self.get_labels(inputs)
-        #conf = torch.cat([self.feat1,self.feat2])
-        #conf = self.feat1+self.feat2
         conf = self.flat_emb
-        #conf = self.feat1  #self.flat_emb
-        #print("size",conf1.size()==conf.size())
-        #torch.manual_seed(2023)
-        if(self.pre_features!=None):
-            pre_features = torch.tensor(self.pre_features).cuda()
-            #pre_features = self.pre_features.clone().detach().requires_grad_(True).cuda()
-        else:
-            #pre_features = torch.tensor(self.feat1).cuda()
-            pre_features = torch.tensor(self.flat_emb).cuda()
-        #     # print("0feature")
-        #pre_features = torch.tensor(self.feat1).cuda()
-        # if(pre_features!=None):
-        #     print("pre_features:",pre_features.size())
-            
-            #pre_features = torch.ones_like(conf).clone().detach().requires_grad_(True).cuda()
-        # print("pre_features:")
-        # print(pre_features)
-        #pre_weight1 = self.pre_weight1
-        #pre_weight1 = torch.tensor(self.pre_weight1).cuda()
-        if(self.pre_weight1!=None):
-            pre_weight1 = torch.tensor(self.pre_weight1).cuda()
-            #pre_weight1 = self.pre_weight1.clone().detach().requires_grad_(True).cuda()
-        else:
-            # print("0weight")
-            pre_weight1 = torch.tensor(torch.zeros((conf.size(0),1))).cuda()
-            # pre_weight1 = torch.div(pre_weight1, torch.sum(pre_weight1))
-            #pre_weight1 = torch.ones((conf.size(0),1)).clone().detach().requires_grad_(True).cuda()
-        self.weight1, self.pre_features, self.pre_weight1 = weight_learner(conf, pre_features, pre_weight1, self.args, self.epoch, self.count)
-        #print("count=",self.count)
-       
 
-        # criterion = nn.CrossEntropyLoss(reduce=False).cuda(self.gpu)
-        # print("self.weight1=",self.weight1)
-        # print("self.pre_weight1=",self.pre_weight1)
-        #loss1=(self.loss_fn(return_dict["y_pred"], y_true, reduction='mean')).cuda()
-        # print("return_dict[y_pred]=",return_dict["y_pred"])
-        #print(criterion(return_dict["y_pred"], y_true))
-        # print(self.loss_fn(return_dict["y_pred"], y_true, reduction='none'))
-        # loss = (criterion(return_dict["y_pred"], y_true).cuda().view(1, -1).mm(self.weight1.cuda()).view(1)).cuda()#+loss1
-        # print("y_true=",y_true)
-        loss = (self.loss_fn(return_dict["y_pred"], y_true, reduction='none')).cuda().view(1, -1).mm(self.weight1.cuda()).view(1).cuda()
+        if (self.pre_features != None):
+            pre_features = torch.tensor(self.pre_features).cuda()
+        else:
+            pre_features = torch.tensor(self.flat_emb).cuda()
+
+        if (self.pre_weight1 != None):
+            pre_weight1 = torch.tensor(self.pre_weight1).cuda()
+        else:
+            pre_weight1 = torch.tensor(torch.zeros((conf.size(0), 1))).cuda()
+        self.weight1, self.pre_features, self.pre_weight1 = weight_learner(conf, pre_features, pre_weight1, self.args,
+                                                                           self.epoch, self.count)
+
+        loss = (self.loss_fn(return_dict["y_pred"], y_true, reduction='none')).cuda().view(1, -1).mm(
+            self.weight1.cuda()).view(1).cuda()
         return loss
+
     def add_regularization(self):
         reg_term = 0
         if self._embedding_regularizer or self._net_regularizer:
@@ -258,9 +240,11 @@ class FCEModel(nn.Module):
                             for net_p, net_lambda in net_reg:
                                 reg_term += (net_lambda / net_p) * torch.norm(param, net_p) ** net_p
         return reg_term
+
     def get_total_loss(self, inputs):
         total_loss = self.add_loss(inputs) + self.add_regularization()
         return total_loss
+
     def reset_parameters(self):
         def reset_default_params(m):
             # initialize nn.Linear/nn.Conv1d layers by default
@@ -268,12 +252,14 @@ class FCEModel(nn.Module):
                 nn.init.xavier_normal_(m.weight)
                 if m.bias is not None:
                     m.bias.data.fill_(0)
+
         def reset_custom_params(m):
             # initialize layers with customized reset_parameters
             pass
+
         self.apply(reset_default_params)
         self.apply(reset_custom_params)
-        
+
     def get_inputs(self, inputs, feature_source=None):
         if feature_source and type(feature_source) == str:
             feature_source = [feature_source]
@@ -285,22 +271,25 @@ class FCEModel(nn.Module):
                 continue
             X_dict[feature] = inputs[:, self.feature_map.get_column_index(feature)].to(self.device)
         return X_dict
+
     def get_labels(self, inputs):
         labels = self.feature_map.labels
         assert len(labels) == 1, "Please override get_labels(), add_loss(), evaluate() when using multiple labels!"
         y = inputs[:, self.feature_map.get_column_index(labels[0])].to(self.device)
         return y.float().view(-1, 1)
-                
+
     def get_group_id(self, inputs):
         return inputs[:, self.feature_map.get_column_index(self.feature_map.group_id)]
+
     def model_to_device(self):
         self.to(device=self.device)
+
     def lr_decay(self, factor=0.1, min_lr=1e-6):
         for param_group in self.optimizer.param_groups:
             reduced_lr = max(param_group["lr"] * factor, min_lr)
             param_group["lr"] = reduced_lr
         return reduced_lr
-           
+
     def fit(self, data_generator, epochs=1, validation_data=None,
             max_gradient_norm=10., **kwargs):
         self.valid_gen = validation_data
@@ -314,7 +303,7 @@ class FCEModel(nn.Module):
         self._epoch_index = 0
         if self._eval_steps is None:
             self._eval_steps = self._steps_per_epoch
-        
+
         logging.info("Start training: {} batches/epoch".format(self._steps_per_epoch))
         logging.info("************ Epoch=1 start ************")
         for epoch in range(epochs):
@@ -327,10 +316,11 @@ class FCEModel(nn.Module):
         logging.info("Training finished.")
         logging.info("Load best model: {}".format(self.checkpoint))
         self.load_weights(self.checkpoint)
+
     def checkpoint_and_earlystop(self, logs, min_delta=1e-6):
         monitor_value = self._monitor.get_value(logs)
         if (self._monitor_mode == "min" and monitor_value > self._best_metric - min_delta) or \
-           (self._monitor_mode == "max" and monitor_value < self._best_metric + min_delta):
+                (self._monitor_mode == "max" and monitor_value < self._best_metric + min_delta):
             self._stopping_steps += 1
             logging.info("Monitor({})={:.6f} STOP!".format(self._monitor_mode, monitor_value))
             if self._reduce_lr_on_plateau:
@@ -340,7 +330,7 @@ class FCEModel(nn.Module):
             self._stopping_steps = 0
             self._best_metric = monitor_value
             if self._save_best_only:
-                logging.info("Save best model: monitor({})={:.6f}"\
+                logging.info("Save best model: monitor({})={:.6f}" \
                              .format(self._monitor_mode, monitor_value))
                 self.save_weights(self.checkpoint)
         if self._stopping_steps >= self._early_stop_patience:
@@ -348,21 +338,25 @@ class FCEModel(nn.Module):
             logging.info("********* Epoch=={} early stop *********".format(self._epoch_index + 1))
         if not self._save_best_only:
             self.save_weights(self.checkpoint)
+
     def eval_step(self):
         logging.info('Evaluation @epoch {} - batch {}: '.format(self._epoch_index + 1, self._batch_index + 1))
         val_logs = self.evaluate(self.valid_gen, metrics=self._monitor.get_metrics())
         self.checkpoint_and_earlystop(val_logs)
         self.train()
+
     def score(self, X, y):
         return self.get_total_loss(X)
+
     def train_step(self, batch_data):
         self.optimizer.zero_grad()
         loss = self.get_total_loss(batch_data)
-        #print("loss=",loss)
+        # print("loss=",loss)
         loss.backward()
         nn.utils.clip_grad_norm_(self.parameters(), self._max_gradient_norm)
         self.optimizer.step()
         return loss
+
     def train_epoch(self, data_generator):
         self._batch_index = 0
         train_loss = 0
@@ -371,7 +365,7 @@ class FCEModel(nn.Module):
             batch_iterator = data_generator
         else:
             batch_iterator = tqdm(data_generator, disable=False, file=sys.stdout)
-        
+
         for batch_index, batch_data in enumerate(batch_iterator):
             self._batch_index = batch_index
             self._total_steps += 1
@@ -383,8 +377,9 @@ class FCEModel(nn.Module):
                 self.eval_step()
             if self._stop_training:
                 break
-        self.count+=1
-        print("self.count=",self.count)
+        self.count += 1
+        print("self.count=", self.count)
+
     def evaluate(self, data_generator, metrics=None):
         self.eval()  # set to evaluation mode
         with torch.no_grad():
@@ -408,27 +403,30 @@ class FCEModel(nn.Module):
                 val_logs = self.evaluate_metrics(y_true, y_pred, self.validation_metrics, group_id)
             logging.info('[Metrics] ' + ' - '.join('{}: {:.6f}'.format(k, v) for k, v in val_logs.items()))
             return val_logs
+
     def predict(self, data_generator):
         self.eval()  # set to evaluation mode
         with torch.no_grad():
             y_pred = []
             if self._verbose > 0:
-                
                 data_generator = tqdm(data_generator, disable=False, file=sys.stdout)
             for batch_data in data_generator:
                 return_dict = self.forward(batch_data)
                 y_pred.extend(return_dict["y_pred"].data.cpu().numpy().reshape(-1))
             y_pred = np.array(y_pred, np.float64)
             return y_pred
+
     def evaluate_metrics(self, y_true, y_pred, metrics, group_id=None):
         return evaluate_metrics(y_true, y_pred, metrics, group_id)
+
     def save_weights(self, checkpoint):
         torch.save(self.state_dict(), checkpoint)
-    
+
     def load_weights(self, checkpoint):
         self.to(self.device)
         state_dict = torch.load(checkpoint, map_location="cpu")
         self.load_state_dict(state_dict)
+
     def get_output_activation(self, task):
         if task == "binary_classification":
             return nn.Sigmoid()
@@ -436,12 +434,12 @@ class FCEModel(nn.Module):
             return nn.Identity()
         else:
             raise NotImplementedError("task={} is not supported.".format(task))
+
     def count_parameters(self, count_embedding=True):
         total_params = 0
-        for name, param in self.named_parameters(): 
+        for name, param in self.named_parameters():
             if not count_embedding and "embedding" in name:
                 continue
             if param.requires_grad:
                 total_params += param.numel()
         logging.info("Total number of parameters: {}.".format(total_params))
-
