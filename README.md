@@ -2,7 +2,7 @@
 
 This is the official  implementation of the paper 《RE-SORT: Removing Spurious Correlation in Multi-level Interaction for CTR Prediction》
 
-![Overview Framework](./images/fig1.png)
+![Overview Framework](./re-sort.png)
 
 ## Datasets
 
