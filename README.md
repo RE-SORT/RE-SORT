@@ -25,7 +25,7 @@ python run_expid.py --config {config_dir} --expid {experiment_id} --gpu {gpu_dev
 ## 🔥 Citation
 If you find our RE-SORT helpful for your research, please consider citing the following paper:
 ```
-@article{songli2024resort,
+@article{song2024resort,
   Title={RE-SORT: Removing Spurious Correlation in Multilevel Interaction for CTR Prediction},
   journal={arXiv preprint:2309.14891},
   year={2024}
