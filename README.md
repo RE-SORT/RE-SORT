@@ -2,7 +2,6 @@
 
 This is an official implementation of ***RE-SORT*** for CTR prediction task, as described in our paper:
 
-Songli Wu, Liang Du, Jia-Qi Yang, Yuai Wang, De-Chuan Zhan, Shuang Zhao and Zixun Sun.
 [RE-SORT: Removing Spurious Correlation in Multilevel Interaction for CTR Prediction](https://arxiv.org/pdf/2309.14891.pdf). arXiv preprint:2309.14891, 2024.
 
 ![Overview Framework](./re-sort.png)
@@ -28,7 +27,6 @@ If you find our RE-SORT helpful for your research, please consider citing the fo
 ```
 @article{songli2024resort,
   Title={RE-SORT: Removing Spurious Correlation in Multilevel Interaction for CTR Prediction},
-  Author={Songli, Wu and Liang, Du and Jia-Qi, Yang and Yuai, Wang and De-Chuan, Zhan and Shuang, Zhao and Zixun, Sun},
   journal={arXiv preprint:2309.14891},
   year={2024}
 }
