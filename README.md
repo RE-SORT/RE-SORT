@@ -20,7 +20,7 @@ python run_expid.py --config {config_dir} --expid {experiment_id} --gpu {gpu_dev
 
 This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
-🔥 ## Citation
+## Citation
 
 If you find our code or benchmarks helpful in your research, please cite the following paper:
 
