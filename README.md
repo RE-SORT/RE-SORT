@@ -18,16 +18,16 @@ python run_expid.py --config {config_dir} --expid {experiment_id} --gpu {gpu_dev
 
 ## License
 
-This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). You are free to share and adapt the material for any purpose, even commercially, with appropriate credit and indication of changes made.
+This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
-🔥 **Citation**
+🔥 ## Citation
 
 If you find our code or benchmarks helpful in your research, please cite the following paper:
 
 ```bibtex
-@article{Songli2024resort,
+@article{ Wu2024resort,
   Title = {RE-SORT: Removing Spurious Correlation in Multilevel Interaction for CTR Prediction},
   Author = {Songli, Wu and Liang, Du and Jia-Qi, Yang and Yuai, Wang and De-Chuan, Zhan and Shuang, Zhao and Zixun, Sun},
   Eprint = {arXiv preprint: 2309.14891},
-  Year = {2024},
+  Year = {2024}
 }
