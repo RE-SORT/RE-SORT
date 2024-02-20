@@ -41,42 +41,30 @@ parser.add_argument ('--lrwarmup_decay', type=int, default=0.1, help = 'the dim 
 
 parser.add_argument ('--n_levels', type=int, default=1, help = 'number of global table levels')
 
-# for expectation
 parser.add_argument ('--lambda_decay_rate', type=float, default=0.9, help = 'ratio of epoch for lambda to decay')
 parser.add_argument ('--lambda_decay_epoch', type=int, default=5, help = 'number of epoch for lambda to decay')
 parser.add_argument ('--min_lambda_times', type=float, default=0.001, help = 'number of global table levels')
 
-# for jointly train
 parser.add_argument ('--train_cnn_with_lossb', type=bool, default=False, help = 'whether train cnn with lossb')
 parser.add_argument ('--cnn_lossb_lambda', type=float, default=0, help = 'lambda for lossb')
 
-# for more moments
 parser.add_argument ('--moments_lossb', type=float, default=1, help = 'number of moments')
 
-# for first step
 parser.add_argument ('--first_step_cons', type=float, default=1, help = 'constrain the weight at the first step')
 
-# for pow
 parser.add_argument ('--decay_pow', type=float, default=2, help = 'value of pow for weight decay')
 
 # for second order moment weight
 parser.add_argument ('--second_lambda', type=float, default=0.3, help = 'weight lambda for second order moment loss')
 parser.add_argument ('--third_lambda', type=float, default=0.05, help = 'weight lambda for second order moment loss')
 
-# for dat/.a aug
-parser.add_argument ('--lower_scale', type=float, default=0.8, help = 'weight lambda for second order moment loss')
-
 # for lr decay epochs
 parser.add_argument ('--epochs_decay', type=list, default=[24, 30], help = 'weight lambda for second order moment loss')
-
-parser.add_argument ('--classes_num', type=int, default=5, help = 'number of epoch for lambda to decay')
-
-parser.add_argument ('--dataset', type=str, default="PACS", help = '')
 parser.add_argument ('--sub_dataset', type=str, default="", help = '')
 parser.add_argument ('--gray_scale', type=float, default=0.1, help = 'weight lambda for second order moment loss')
 
 parser.add_argument('--sum', type=bool, default=True, help='sum or concat')
-parser.add_argument('--concat', type=int, default=1, help='sum or concat')
+parser.add_argument('--concat', type=int, default=0, help='sum or concat')
 parser.add_argument('--min_scale', type=float, default=0.8, help='')
 parser.add_argument('--presave_ratio', type=float, default=0.9, help='the ratio for presaving features')
 
