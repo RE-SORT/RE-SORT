@@ -1,10 +1,10 @@
 import torch
 from torch import nn
-from FCE import BaseModel
+from FCE import FCEModel
 from re_sortctr.pytorch.layers import FeatureEmbedding, MLP_Block
 from .xpos_relative_position import XPOS
 import math
-class RE_SORT(BaseModel):
+class RE_SORT(FCEModel):
     def __init__(self, 
                  feature_map, 
                  model_id="RE_SORT",
